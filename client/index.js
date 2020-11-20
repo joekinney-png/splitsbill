@@ -5,6 +5,4 @@ import './styles/styles.scss';
 
 render(<App />, document.getElementById('root'));
 
-// this is test pull request from Joe; create a conflict
-
-const test = 0;
+// this is test pull request from Joe; create another merge conflict
