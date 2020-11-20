@@ -1,7 +1,8 @@
 const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
 const braintree = require('braintree');
 const express = require('express');
-// const fetch = require('node-fetch');
+const fetch = require('node-fetch');
 const path = require('path');
 const apiRouter = require('./routes/api');
 
@@ -12,6 +13,13 @@ app.use(cookieParser());
 // IDs for the braintree / venmo oauth
 const client_id = process.env.VENMO_CLIENT_ID;
 const client_secret = process.env.VENMO_CLIENT_SECRET;
+const redirect_uri = process.env.VENMO_REDIRECT_URI;
+
+// create a new gateway to braintree
+const gateway = new braintree.BraintreeGateway({
+  clientId: client_id,
+  clientSecret: client_secret,
+});
 
 // routes all client requests
 app.use('/api', apiRouter);
@@ -26,36 +34,40 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 app.get('/login/venmo', (req, res) => {
-  console.log(client_id);
-  console.log(client_secret);
-
-  const gateway = new braintree.BraintreeGateway({
-    clientId: client_id,
-    clientSecret: client_secret,
-  });
-
-  console.log(gateway);
-
+  // redirect the user to braintree to initiate OAuth process
   const url = gateway.oauth.connectUrl({
-    redirectUri: 'http://localhost:3000/login/venmo/callback',
+    redirectUri: redirect_uri,
     scope: 'read_only',
     state: 'foo_state',
   });
 
-  console.log(url);
-
+  // redirect the user to the oauth callback after user grants authorization on braintree
+  // response includes code from braintree
   res.redirect(url);
 });
 
-async function getAccessToken(code) {}
+async function getAccessToken(code) {
+  console.log(code);
+
+  // &merchantId=${client_id}
+  const res = await gateway.oauth.createTokenFromCode({
+    code: `${redirect_uri}/callback?state=foo_state&code=${code}`,
+  });
+  console.log(res);
+  const data = await res.json();
+  console.log(data);
+}
 
 async function getVenmoUser(access_token) {}
 
 app.get('/login/venmo/callback', async (req, res) => {
-  console.log('was redirected to the callback');
+  // pull the braintree response code out of the query property of the request object
   const code = req.query.code;
+  // exchange the code for the access token (have already opened gateway)
   const token = await getAccessToken(code);
+  // use access token to get the data of the venmo user that has logged into the app
   const venmoData = await getVenmoUser(token);
+  // return the user data after converting it from json
   res.json(venmoData);
 });
 
