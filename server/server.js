@@ -47,15 +47,12 @@ app.get('/login/venmo', (req, res) => {
 });
 
 async function getAccessToken(code) {
-  console.log(code);
-
-  // &merchantId=${client_id}
   const res = await gateway.oauth.createTokenFromCode({
-    code: `${redirect_uri}/callback?state=foo_state&code=${code}`,
+    code: code,
+    scope: 'read_only',
   });
-  console.log(res);
-  const data = await res.json();
-  console.log(data);
+  const token = await res.credentials.accessToken;
+  return token;
 }
 
 async function getVenmoUser(access_token) {}
@@ -65,10 +62,10 @@ app.get('/login/venmo/callback', async (req, res) => {
   const code = req.query.code;
   // exchange the code for the access token (have already opened gateway)
   const token = await getAccessToken(code);
-  // use access token to get the data of the venmo user that has logged into the app
+  // // use access token to get the data of the venmo user that has logged into the app
   const venmoData = await getVenmoUser(token);
-  // return the user data after converting it from json
-  res.json(venmoData);
+  // // return the user data after converting it from json
+  // res.json(venmoData);
 });
 
 app.use('*', (req, res) => res.status(404).send('page not found'));
