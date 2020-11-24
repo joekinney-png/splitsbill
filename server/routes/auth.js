@@ -42,7 +42,9 @@ router.get('/login/callback', async (req, res) => {
   res.json(githubData);
 });
 
-router.get('/login', sessionController.isLoggedIn, (req, res) => {
+router.get('/login', (req, res) => {
+  console.log('hitting the server');
+  console.log(client_id);
   const url = `https://github.com/login/oauth/authorize?client_id=${client_id}&redirect_uri=http://localhost:3000/auth/login/callback`;
   res.redirect(url);
 });
